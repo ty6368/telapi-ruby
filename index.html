@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Telapi-ruby by ty6368</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Telapi-ruby</h1>
+        <p></p>
+
+        <p class="view"><a href="https://github.com/ty6368/telapi-ruby">View the Project on GitHub <small>ty6368/telapi-ruby</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/ty6368/telapi-ruby/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/ty6368/telapi-ruby/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/ty6368/telapi-ruby">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>TelAPI Ruby Gem</h1>
+
+<p>See <a href="http://www.telapi.com">www.telapi.com</a> to signup for TelAPI.</p>
+
+<h2>Installation</h2>
+
+<p>Add this line to your application's Gemfile:</p>
+
+<pre><code>gem 'telapi'
+</code></pre>
+
+<p>And then execute:</p>
+
+<pre><code>$ bundle
+</code></pre>
+
+<p>Or install it yourself as:</p>
+
+<pre><code>$ gem install telapi
+</code></pre>
+
+<h2>Authentication and Configuration</h2>
+
+<p>Every API request requires a valid <em>account_sid</em> and <em>auth_token</em>. By default these are set to <em>nil</em>, so your application
+should set them in its configuration (e.g. Ruby on Rails initializer).</p>
+
+<p>For example:</p>
+
+<pre><code>Telapi.config do |config|
+  config.account_sid = 'abc123'
+  config.auth_token  = 'xyz567'
+end
+</code></pre>
+
+<p>You can also set individual settings directly:</p>
+
+<pre><code>Telapi.config.ssl_ca_path = '/some/path'
+</code></pre>
+
+<p>Inspecting the current configuration returns a hash:</p>
+
+<pre><code>p Telapi.config # (or Telapi.config.inspect)
+#=&gt; {:base_uri=&gt;"https://api.telapi.com/2011-07-01/", :ssl_ca_path=&gt;"/some/path", :account_sid=&gt;'abc123', :auth_token=&gt;'xyz567'}
+</code></pre>
+
+<h2>Design</h2>
+
+<p>Minimal code is needed to retrieve objects and perform operations. There's no need to instantiate a client object -- work directly with the desired classes.</p>
+
+<p>Most classes provide identically named class and instance methods for ultimate flexibility. For example, to hang up an existing call, you can call either of the following:</p>
+
+<pre><code>call = Telapi::Call.get('123abc')
+call.hangup
+
+# avoids an additional network request
+Telapi::Call.hangup('123abc')
+</code></pre>
+
+<p>Individual objects are wrapped into a Resource instance, which exposes all of the attributes documented in the <a href="http://www.telapi.com/docs/">TelAPI documentation</a> as accessors and avoids the need to deal with direct JSON responses in your application code. A convenient <em>attributes</em> method allows you to dump out the object's values.</p>
+
+<pre><code>Telapi::Account.get.attributes
+# =&gt; { ...hash of keys and values... }
+</code></pre>
+
+<p>Methods that return collections wrap Resource objects in a Resource Collection instance, which behaves similar to an Array, but also includes meta info about totals, page size, current page, etc.</p>
+
+<h2>Documentation</h2>
+
+<p>Detailed documentation can be found at <a href="http://rubydoc.info/gems/telapi/">RubyDoc</a> and <a href="http://www.telapi.com/docs/">the official TelAPI documentation site</a>.</p>
+
+<h2>Usage Examples - REST API</h2>
+
+<p>Refer to the documentation for more examples.</p>
+
+<h3>Get account details</h3>
+
+<pre><code>acct = Telapi::Account.get
+acct.friendly_name    # =&gt; "My Account"
+acct.account_balance  # =&gt; "25.000"
+</code></pre>
+
+<h3>Get available numbers</h3>
+
+<pre><code>numbers = Telapi::AvailablePhoneNumber.list('US', :AreaCode =&gt; '805')
+numbers.each { |n| puts n.phone_number }
+# =&gt; +18052585701
+#    +18052585702
+</code></pre>
+
+<h3>Get list of calls</h3>
+
+<pre><code>Telapi::Call.list # =&gt; returns ResouceCollection of Telapi::Call objects
+</code></pre>
+
+<h3>Make a call</h3>
+
+<pre><code>Telapi::Call.make('12223334444', '13334445555', 'http://mycallback...')
+</code></pre>
+
+<h3>Record a call</h3>
+
+<pre><code>call = Telapi::Call.get('123abc')
+call.record
+
+# or invoke the class method to avoid an additional network request
+Telapi::Call.record('123abc')
+</code></pre>
+
+<h3>Send an SMS message</h3>
+
+<pre><code>Telapi::Message.create('12223334444', '13334445555', 'Hey you')
+</code></pre>
+
+<h3>Transcribe audio</h3>
+
+<pre><code>Telapi::Transcription.transcribe_audio('http://some-audio-url')
+</code></pre>
+
+<h3>Caller ID</h3>
+
+<pre><code>Telapi::CallerId.lookup('12223334444')
+</code></pre>
+
+<h2>Usage Examples - Inbound XML</h2>
+
+<h3>Say</h3>
+
+<pre><code>ix = Telapi::InboundXml.new do
+  Say('Hello.', :loop =&gt; 3, :voice =&gt; 'man')
+  Say('Hello, my name is Jane.', :voice =&gt; 'woman')
+  Say('Now I will not stop talking.', :loop =&gt; 0)
+end
+
+ix.response
+
+# results in the following XML:
+# &lt;?xml version="1.0"?&gt;
+# &lt;Response&gt;
+#   &lt;Say loop="3" voice="man"&gt;Hello.&lt;/Say&gt;
+#   &lt;Say voice="woman"&gt;Hello, my name is Jane.&lt;/Say&gt;
+#   &lt;Say loop="0"&gt;Now I will not stop talking.&lt;/Say&gt;
+# &lt;/Response&gt;
+</code></pre>
+
+<h3>Play</h3>
+
+<pre><code>Telapi::InboundXml.new { Play('http://example.com/hello.mp3', :loop =&gt; 3) }
+</code></pre>
+
+<h3>Gather</h3>
+
+<pre><code>Telapi::InboundXml.new do
+  Gather(:action      =&gt; 'http://example.com/example-callback-url/say?example=simple.xml',
+         :method      =&gt; 'GET',
+         :numDigits   =&gt; '4',
+         :finishOnKey =&gt; '#') {
+    Say 'Please enter your 4 digit pin.'
+  }
+end
+</code></pre>
+
+<h3>SMS Response</h3>
+
+<pre><code>Telapi::InboundXml.new do
+  Sms(
+    'Test message sent from TelAPI!',
+    :action =&gt; 'http://liveoutput.com/telapi-test-sms-action',
+    :method =&gt; 'POST',
+    :from =&gt; '1112223333',
+    :to =&gt; '3334445555',
+    :statusCallback =&gt; 'http://liveoutput.com/telapi-test-status-callback'
+  )
+end
+</code></pre>
+
+<h2>Compatibility</h2>
+
+<p>Currently targeted for Ruby 1.9.</p>
+
+<h2>Contributing</h2>
+
+<ol>
+<li>Fork it</li>
+<li>Create your feature branch (<code>git checkout -b my-new-feature</code>)</li>
+<li>Commit your changes (<code>git commit -am 'Add some feature'</code>)</li>
+<li>Push to the branch (<code>git push origin my-new-feature</code>)</li>
+<li>Create new Pull Request</li>
+</ol>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/ty6368">ty6368</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
